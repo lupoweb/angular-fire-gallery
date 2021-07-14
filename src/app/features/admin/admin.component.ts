@@ -6,16 +6,12 @@ import {Presentation} from '../../model/presentation';
   selector: 'app-admin',
   template: `
     <!--player-->
-    <div class="center">
-      <img
-        class="player-image"
-        src="https://picsum.photos/600/400?image=10"
-      >
-
+    <div *ngIf="items?.length" class="center">
+      <img [src]="items[counter]" style="max-width: 100%">
       <div>
-        <button class="button">PREV</button>
-        <span class="counter"> 1 / 3</span>
-        <button class="button">NEXT</button>
+        <button class="button" (click)="gotoPrevImage()">PREV</button>
+        <span class="counter">{{counter + 1}} / {{items.length}}</span>
+        <button class="button" (click)="gotoNextImage()">NEXT</button>
       </div>
     </div>
 
@@ -41,8 +37,15 @@ import {Presentation} from '../../model/presentation';
 })
 export class AdminComponent {
   items: string[] = [];
+  counter: number;
   constructor(private db: AngularFireDatabase) {
-    db.object<Presentation>('presentation').valueChanges().subscribe((res: Presentation) => this.items = res.images);
+    db.object<Presentation>('presentation')
+      .valueChanges()
+      .subscribe(
+        (res: Presentation) => {
+          this.items = (res && res.images) || [];
+          this.counter = (res && res.counter) || 0;
+        });
   }
 
   addImage(url: string) {
@@ -60,5 +63,24 @@ export class AdminComponent {
     const tmb = `https://picsum.photos/600/400?image=${random}`;
     this.addImage(tmb);
   }
+
+
+  gotoPrevImage() {
+    const total = this.items.length - 1;
+    const counter = (this.counter > 0) ? this.counter - 1 : total;
+    this.updateCounter(counter);
+  }
+
+  gotoNextImage() {
+    const total = this.items.length - 1;
+    const counter = (this.counter < total) ? this.counter + 1 : 0;
+    this.updateCounter(counter);
+  }
+
+  updateCounter(counter: number) {
+    const itemRef = this.db.object('presentation/counter');
+    itemRef.set(counter);
+  }
+
 
 }
